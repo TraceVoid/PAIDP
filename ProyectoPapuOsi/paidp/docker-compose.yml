@@ -1,0 +1,41 @@
+version: "3.8"
+
+services:
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+
+  kafka:
+    image: confluentinc/cp-kafka:latest
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+
+  postgres:
+    image: postgres
+    environment:
+      POSTGRES_DB: paidp
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+
+  api-gateway:
+    build: ./api-gateway
+    ports:
+      - "8000:8000"
+
+  ingestion-service:
+    build: ./ingestion-service
+
+  ai-service:
+    build: ./ai-service
+
+  decision-agent:
+    build: ./decision-agent
+
+  soar-service:
+    build: ./soar-service
