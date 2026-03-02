@@ -1,8 +1,12 @@
+////////////////////////////////////////
+Mayor importancia
 kafka
 https://developer.confluent.io/courses/#fundamentals
 pythorch
 https://www.learnpytorch.io/
-Java (por si acaso xd)
-https://www.datacamp.com/es/tutorial/oop-in-java
 react
 https://es.legacy.reactjs.org/docs/getting-started.html
+/////////////////////////////////////////////////////////////
+Menor importancia
+Java (por si acaso xd)
+https://www.datacamp.com/es/tutorial/oop-in-java
