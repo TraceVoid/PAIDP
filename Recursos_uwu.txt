@@ -1,0 +1,4 @@
+kafka
+https://developer.confluent.io/courses/#fundamentals
+pythorch
+https://www.learnpytorch.io/
