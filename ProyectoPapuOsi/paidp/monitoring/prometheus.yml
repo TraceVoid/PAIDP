@@ -1,7 +1,28 @@
 global:
   scrape_interval: 15s
+  evaluation_interval: 15s
 
 scrape_configs:
-  - job_name: "prometheus"
+  - job_name: 'api-gateway'
     static_configs:
-      - targets: ["localhost:9090"]
+      - targets: ['api-gateway:8000']
+
+  - job_name: 'ingestion-service'
+    static_configs:
+      - targets: ['ingestion-service:8001']
+
+  - job_name: 'ai-service'
+    static_configs:
+      - targets: ['ai-service:8002']
+
+  - job_name: 'decision-agent'
+    static_configs:
+      - targets: ['decision-agent:8003']
+
+  - job_name: 'soar-service'
+    static_configs:
+      - targets: ['soar-service:8004']
+
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
