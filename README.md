@@ -1,9 +1,3 @@
-El dashboard ya esta terminado, solo falta revisar el ia-service y el api-getway
+Todo ya esta termindo
 
-
-Terminado:
-dashboard
-
-Comprobar:
-ia-service
-api-getway
+Hace el Readme, roadmap, changuelog y documentacion oficial del repo y su proyecto para ya hacerlo publico
