@@ -2,7 +2,7 @@
 Sistema de detección de amenazas en tiempo real utilizando Inteligencia Artificial, mensajería distribuida y orquestación de respuestas de seguridad.
 
 ## Nota
-Cambiar paarte de SECRET_KEY=Prueba123 en el docuemento ".env.example" y ".env" al momento de su lanzamiento. 
+Cambiar la parte de SECRET_KEY=Prueba123 en el docuemento ".env.example" y ".env" al momento de su lanzamiento. 
 
 ### Tecnologías
 
