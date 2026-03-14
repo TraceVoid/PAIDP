@@ -1,0 +1,248 @@
+services:
+
+  # -------------------------
+  # ZOOKEEPER
+  # -------------------------
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    networks:
+      - paidp-network
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z localhost 2181 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  # -------------------------
+  # KAFKA
+  # -------------------------
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    depends_on:
+      zookeeper:
+        condition: service_healthy
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+
+    ports:
+      - "29092:9092"
+
+    networks:
+      - paidp-network
+
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z localhost 9092 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 60s
+
+
+  # -------------------------
+  # POSTGRES
+  # -------------------------
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: paidp
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - paidp-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d paidp"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+
+  # -------------------------
+  # REDIS
+  # -------------------------
+  redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes
+    volumes:
+      - redis-data:/data
+    networks:
+      - paidp-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+
+  # -------------------------
+  # MLFLOW
+  # -------------------------
+  mlflow:
+    image: ghcr.io/mlflow/mlflow:v2.9.2
+    ports:
+      - "5000:5000"
+    environment:
+      - MLFLOW_BACKEND_STORE_URI=postgresql://admin:admin@postgres:5432/paidp
+      - MLFLOW_DEFAULT_ARTIFACT_ROOT=/mlflow/artifacts
+    volumes:
+      - mlflow-data:/mlflow
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - paidp-network
+    command: mlflow server --host 0.0.0.0 --port 5000
+
+
+  # -------------------------
+  # API GATEWAY
+  # -------------------------
+  api-gateway:
+    build: ./api-gateway
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://admin:admin@postgres:5432/paidp
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    networks:
+      - paidp-network
+
+
+  # -------------------------
+  # INGESTION SERVICE
+  # -------------------------
+  ingestion-service:
+    build: ./ingestion-service
+    depends_on:
+      kafka:
+        condition: service_healthy
+    networks:
+      - paidp-network
+
+
+  # -------------------------
+  # AI SERVICE
+  # -------------------------
+  ai-service:
+    build: ./ai-service
+    environment:
+      - MLFLOW_TRACKING_URI=http://mlflow:5000
+    depends_on:
+      kafka:
+        condition: service_healthy
+      mlflow:
+        condition: service_started
+    networks:
+      - paidp-network
+
+
+  # -------------------------
+  # DECISION AGENT
+  # -------------------------
+  decision-agent:
+    build: ./decision-agent
+    depends_on:
+      kafka:
+        condition: service_healthy
+    networks:
+      - paidp-network
+
+
+  # -------------------------
+  # SOAR SERVICE
+  # -------------------------
+  soar-service:
+    build: ./soar-service
+    environment:
+      - DATABASE_URL=postgresql://admin:admin@postgres:5432/paidp
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    networks:
+      - paidp-network
+
+
+  # -------------------------
+  # DASHBOARD
+  # -------------------------
+  dashboard:
+    build: ./dashboard
+    ports:
+      - "3000:80"
+    depends_on:
+      - api-gateway
+    networks:
+      - paidp-network
+
+
+  # -------------------------
+  # PROMETHEUS
+  # -------------------------
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+    networks:
+      - paidp-network
+
+
+  # -------------------------
+  # GRAFANA
+  # -------------------------
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_SECURITY_ADMIN_USER=admin
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./monitoring/grafana-dashboards:/etc/grafana/provisioning/dashboards
+      - ./monitoring/grafana-datasources:/etc/grafana/provisioning/datasources
+    depends_on:
+      - prometheus
+    networks:
+      - paidp-network
+
+
+networks:
+  paidp-network:
+    driver: bridge
+
+
+volumes:
+  postgres-data:
+  redis-data:
+  mlflow-data:
+  prometheus-data:
+  grafana-data:
