@@ -1,0 +1,37 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: 'api-gateway'
+    static_configs:
+      - targets: ['api-gateway:8000']
+    metrics_path: /metrics
+
+  - job_name: 'ingestion-service'
+    static_configs:
+      - targets: ['ingestion-service:8001']
+    metrics_path: /metrics
+
+  # CORRECCIÓN: ai-service ahora es un servidor FastAPI en 8002
+  # con /metrics montado como ASGI app (igual que los otros servicios HTTP).
+  # Antes no tenía servidor HTTP propio (solo start_http_server en hilo),
+  # lo que hacía que Prometheus no pudiera recolectar sus métricas.
+  - job_name: 'ai-service'
+    static_configs:
+      - targets: ['ai-service:8002']
+    metrics_path: /metrics
+
+  - job_name: 'decision-agent'
+    static_configs:
+      - targets: ['decision-agent:8003']
+    metrics_path: /metrics
+
+  - job_name: 'soar-service'
+    static_configs:
+      - targets: ['soar-service:8004']
+    metrics_path: /metrics
+
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']

@@ -1,0 +1,8 @@
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+# CPU-only: ~200 MB vs ~670 MB de la versión CUDA completa
+torch==2.1.1+cpu
+transformers==4.35.2
+kafka-python==2.0.2
+numpy==1.26.2
+prometheus-client==0.19.0
